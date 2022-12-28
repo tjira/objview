@@ -1,0 +1,8 @@
+.cache/
+.clangd/
+.makefile/
+.vscode/
+compile_commands.json
+objview
+*.exe
+*.o
