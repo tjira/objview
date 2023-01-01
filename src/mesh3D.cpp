@@ -1,3 +1,5 @@
+#define TINYOBJLOADER_IMPLEMENTATION
+
 #include "../include/mesh3D.h"
 #include "../lib/tinyobjloader/tiny_obj_loader.h"
 

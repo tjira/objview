@@ -1,6 +1,5 @@
 #pragma once
 
-#define TINYOBJLOADER_IMPLEMENTATION
 
 #include "buffer.h"
 #include "shader.h"

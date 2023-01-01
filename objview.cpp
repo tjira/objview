@@ -66,7 +66,7 @@ private:
 Gui::Gui(GLFWwindow* window) : window(window) {
     ImGui::CreateContext();
     ImGui_ImplOpenGL3_Init("#version 420");
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplGlfw_InitForOpenGL(this->window, true);
     ImGui::GetIO().IniFilename = nullptr;
 }
 
@@ -150,67 +150,94 @@ void set(const Shader& shader, const GLFWPointer::Camera& camera, const GLFWPoin
 }
 
 int main(int argc, char** argv) {
+
+    // Initialize argument parser
     argparse::ArgumentParser program("ObjView", "1.0", argparse::default_arguments::none);
 
+    // Add argumens to argument parser
     program.add_argument("-f").help("File with model data to display.").default_value(std::string("model.obj"));
     program.add_argument("-h").help("Display this help message and exit.").default_value(false).implicit_value(true);
 
+    // Parse the arguments
     try {
         program.parse_args(argc, argv);
     } catch (const std::runtime_error &error) {
         std::cerr << error.what() << std::endl << std::endl << program; return EXIT_FAILURE;
     }
 
+    // Print the help message if the -h flag was passed
     if (program.get<bool>("-h")) {
         std::cout << program.help().str(); return EXIT_SUCCESS;
     }
 
+    // Create GLFW variable struct and a window pointer
     GLFWPointer pointer{
         .width = WIDTH, .height = HEIGHT,
         .title = "Model View",
     };
     GLFWwindow* window;
 
+    // Initialize GLFW and throw error if failed
     if(!glfwInit()) {
         throw std::runtime_error("Error during GLFW initialization.");
     }
+
+    // Pass OpenGL version and other hints
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, pointer.major);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, pointer.minor);
     glfwWindowHint(GLFW_SAMPLES, pointer.samples);
+
+    // Create the window
     if (window = glfwCreateWindow(pointer.width, pointer.height, pointer.title.c_str(), nullptr, nullptr); !window) {
         throw std::runtime_error("Error during window creation.");
     }
+
+    // Initialize GLAD
     if (glfwMakeContextCurrent(window); !gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         throw std::runtime_error("Error during GLAD initialization.");
     }
+
+    // Enable some options
     glEnable(GL_DEPTH_TEST), glEnable(GL_CULL_FACE);
     glfwSetWindowUserPointer(window, &pointer);
     glfwSwapInterval(1);
 
+    // Set event callbacks
     glfwSetCursorPosCallback(window, positionCallback);
     glfwSetWindowSizeCallback(window, resizeCallback);
     glfwSetScrollCallback(window, scrollCallback);
     glfwSetKeyCallback(window, keyCallback);
 
+    // Initialize camera matrices
     pointer.camera.proj = glm::perspective(glm::radians(45.0f), (float)pointer.width / pointer.height, 0.01f, 1000.0f);
     pointer.camera.view = glm::lookAt({ 0.0f, 0.0f, 5.0f }, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
     {
+        // Create mesh, shader and GUI
         Mesh3D mesh = Mesh3D::Load(program.get<std::string>("-f"));
         Shader shader(vertex, fragment);
         Gui gui(window);
         
+        // Enter the render loop
         while (!glfwWindowShouldClose(window)) {
+            
+            // Clear the color and depth buffer
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            // Set shade variables
             set(shader, pointer.camera, pointer.light);
 
+            // Render mesh and GUI
             mesh.render(shader);
             gui.render(mesh);
             
+            // Swap buffers and poll events
             glfwSwapBuffers(window);
             glfwPollEvents();
         }
     }
+
+    // Clean up GLFW
     glfwTerminate();
 }
