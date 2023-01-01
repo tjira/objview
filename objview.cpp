@@ -1,8 +1,5 @@
-#include "include/mesh3D.h"
+#include "include/gui.h"
 #include "lib/argparse/argparse.hpp"
-#include "lib/imgui/imgui_impl_opengl3.h"
-#include "lib/imgui/imgui_impl_glfw.h"
-#include "lib/imgui/ImGuiFileDialog.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
@@ -42,9 +39,8 @@ void main() {
 })";
 
 struct GLFWPointer {
-    int width, height, samples = 16, major = 4, minor = 2;
-    std::string title = "OpenGL Window";
-    glm::vec2 mouse{};
+    int width = WIDTH, height = HEIGHT, samples = 16, major = 4, minor = 2;
+    std::string title = "3D Model Viewer"; glm::vec2 mouse;
     struct Camera {
         glm::mat4 view, proj;
     } camera{};
@@ -53,55 +49,6 @@ struct GLFWPointer {
         glm::vec3 position = { 1.0f, 1.0f, 1.0f };
     } light{};
 };
-
-class Gui {
-public:
-    Gui(GLFWwindow* window); ~Gui();
-    void render(Mesh3D& mesh);
-
-private:
-    GLFWwindow* window;
-};
-
-Gui::Gui(GLFWwindow* window) : window(window) {
-    ImGui::CreateContext();
-    ImGui_ImplOpenGL3_Init("#version 420");
-    ImGui_ImplGlfw_InitForOpenGL(this->window, true);
-    ImGui::GetIO().IniFilename = nullptr;
-}
-
-Gui::~Gui() {
-    ImGui_ImplGlfw_Shutdown();
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui::DestroyContext();
-}
-
-void Gui::render(Mesh3D& mesh) {
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-    ImGui::SetNextWindowPos({ 0, 0 });
-    ImGui::Begin("info", nullptr,
-        ImGuiWindowFlags_NoTitleBar |
-        ImGuiWindowFlags_AlwaysAutoResize |
-        ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoBringToFrontOnFocus |
-        ImGuiWindowFlags_NoFocusOnAppearing
-    );
-    ImGui::Text("%.1f", ImGui::GetIO().Framerate);
-    ImGui::End();
-
-    if (ImGuiFileDialog::Instance()->Display("Import 3D Model", ImGuiWindowFlags_NoCollapse, { 512, 288 })) {
-        if (ImGuiFileDialog::Instance()->IsOk()) {
-            mesh = Mesh3D::Load(ImGuiFileDialog::Instance()->GetFilePathName());
-        }
-        ImGuiFileDialog::Instance()->Close();
-    }
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
 
 void keyCallback(GLFWwindow* window, int key, int, int action, int mods) {
     if (action == GLFW_PRESS) {
@@ -119,8 +66,8 @@ void keyCallback(GLFWwindow* window, int key, int, int action, int mods) {
 void positionCallback(GLFWwindow* window, double x, double y) {
     GLFWPointer* pointer = (GLFWPointer*)glfwGetWindowUserPointer(window);
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && !ImGui::GetIO().WantCaptureMouse) {
-        glm::vec3 yaxis = glm::inverse(glm::mat3(pointer->camera.view)) * glm::vec3(1, 0, 0);
         glm::vec3 xaxis = glm::inverse(glm::mat3(pointer->camera.view)) * glm::vec3(0, 1, 0);
+        glm::vec3 yaxis = glm::inverse(glm::mat3(pointer->camera.view)) * glm::vec3(1, 0, 0);
         pointer->camera.view = glm::rotate(pointer->camera.view, 0.01f * ((float)y - pointer->mouse.y), yaxis);
         pointer->camera.view = glm::rotate(pointer->camera.view, 0.01f * ((float)x - pointer->mouse.x), xaxis);
     }
@@ -152,7 +99,7 @@ void set(const Shader& shader, const GLFWPointer::Camera& camera, const GLFWPoin
 int main(int argc, char** argv) {
 
     // Initialize argument parser
-    argparse::ArgumentParser program("ObjView", "1.0", argparse::default_arguments::none);
+    argparse::ArgumentParser program("3D Model Viewer", "1.0", argparse::default_arguments::none);
 
     // Add argumens to argument parser
     program.add_argument("-f").help("File with model data to display.").default_value(std::string("model.obj"));
@@ -171,11 +118,7 @@ int main(int argc, char** argv) {
     }
 
     // Create GLFW variable struct and a window pointer
-    GLFWPointer pointer{
-        .width = WIDTH, .height = HEIGHT,
-        .title = "Model View",
-    };
-    GLFWwindow* window;
+    GLFWPointer pointer; GLFWwindow* window;
 
     // Initialize GLFW and throw error if failed
     if(!glfwInit()) {

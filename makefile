@@ -8,7 +8,7 @@ endif
 
 # Link =================================================================================================================
 
-objview: objview.o buffer.o mesh3D.o shader.o glad.o imgui.o imgui_demo.o imgui_dilog.o imgui_draw.o imgui_glfw.o imgui_opengl.o imgui_tables.o imgui_widgets.o
+objview: objview.o buffer.o gui.o mesh3D.o shader.o glad.o imgui.o imgui_demo.o imgui_dilog.o imgui_draw.o imgui_glfw.o imgui_opengl.o imgui_tables.o imgui_widgets.o
 	g++ $(FLAGS) -o $@ $^ $(LIBS)
 
 objview.o: objview.cpp
@@ -17,6 +17,9 @@ objview.o: objview.cpp
 # Project ==============================================================================================================
 
 buffer.o: src/buffer.cpp
+	g++ $(FLAGS) -c -o $@ $^
+
+gui.o: src/gui.cpp
 	g++ $(FLAGS) -c -o $@ $^
 
 mesh3D.o: src/mesh3D.cpp
